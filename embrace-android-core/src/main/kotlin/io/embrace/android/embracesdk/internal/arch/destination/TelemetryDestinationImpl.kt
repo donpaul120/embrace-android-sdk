@@ -236,6 +236,8 @@ class TelemetryDestinationImpl(
                 attributes = attributes
             )
         }
+
+        override fun asEmbraceSpan(): EmbraceSpan = span
     }
 
     private class SessionPartStateTokenImpl<T : Any>(

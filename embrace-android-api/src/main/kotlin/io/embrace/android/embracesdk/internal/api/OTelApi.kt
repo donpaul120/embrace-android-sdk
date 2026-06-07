@@ -53,4 +53,11 @@ public interface OTelApi {
      * current session span. Must be called before the SDK is started.
      */
     public fun setAutoParentOrphanSpansToSession(enabled: Boolean)
+
+    /**
+     * When enabled, spans started without an explicit parent are automatically parented to the
+     * current view span (screen). Falls back to the session span when no view is active.
+     * Must be called before the SDK is started.
+     */
+    public fun setAutoParentOrphanSpansToView(enabled: Boolean)
 }

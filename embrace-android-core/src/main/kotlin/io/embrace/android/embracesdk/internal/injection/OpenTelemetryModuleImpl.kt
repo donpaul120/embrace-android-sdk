@@ -24,6 +24,7 @@ import io.embrace.android.embracesdk.internal.spans.CurrentSessionPartSpan
 import io.embrace.android.embracesdk.internal.spans.CurrentSessionPartSpanImpl
 import io.embrace.android.embracesdk.internal.spans.EmbraceTracer
 import io.embrace.android.embracesdk.internal.utils.EmbTrace
+import io.embrace.android.embracesdk.spans.EmbraceSpan
 
 class OpenTelemetryModuleImpl(
     private val initModule: InitModule,
@@ -37,6 +38,8 @@ class OpenTelemetryModuleImpl(
     private var otelBehavior: OtelBehavior? = null
 
     private var autoParentOrphanSpansToSession: Boolean = false
+
+    private var currentViewSpanProvider: (() -> EmbraceSpan?)? = null
 
     override val spanRepository: SpanRepository by lazy {
         SpanRepository()
@@ -94,6 +97,10 @@ class OpenTelemetryModuleImpl(
         this.autoParentOrphanSpansToSession = enable
     }
 
+    override fun setViewSpanProvider(provider: (() -> EmbraceSpan?)?) {
+        this.currentViewSpanProvider = provider
+    }
+
     private fun setupOtelBehavior(otelBehavior: OtelBehavior) {
         this.otelBehavior = otelBehavior
         if (!otelBehavior.shouldUseKotlinSdk()) {
@@ -146,6 +153,7 @@ class OpenTelemetryModuleImpl(
             openTelemetrySupplier = { otelSdkWrapper.openTelemetryKotlin },
             embraceSpanFactorySupplier = { embraceSpanFactory },
             sessionSpanProvider = { if (autoParentOrphanSpansToSession) currentSessionPartSpan.current() else null },
+            viewSpanProvider = { currentViewSpanProvider?.invoke() },
         )
     }
 

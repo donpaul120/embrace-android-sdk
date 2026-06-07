@@ -52,6 +52,7 @@ public final class io/embrace/android/embracesdk/Embrace : io/embrace/android/em
 	public fun screenLoaded (Ljava/lang/String;)V
 	public fun screenLoaded (Ljava/lang/String;Ljava/util/Map;)V
 	public fun setAutoParentOrphanSpansToSession (Z)V
+	public fun setAutoParentOrphanSpansToView (Z)V
 	public fun setResourceAttribute (Ljava/lang/String;Ljava/lang/String;)V
 	public fun setUserEmail (Ljava/lang/String;)V
 	public fun setUserIdentifier (Ljava/lang/String;)V

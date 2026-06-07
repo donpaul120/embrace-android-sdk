@@ -2,6 +2,8 @@ package io.embrace.android.embracesdk.internal.api.delegate
 
 import io.embrace.android.embracesdk.internal.api.OTelApi
 import io.embrace.android.embracesdk.internal.injection.ModuleInitBootstrapper
+import io.embrace.android.embracesdk.internal.instrumentation.view.ViewDataSource
+import io.embrace.android.embracesdk.spans.EmbraceSpan
 import io.opentelemetry.kotlin.NoopOpenTelemetry
 import io.opentelemetry.kotlin.OpenTelemetry
 import io.opentelemetry.kotlin.logging.export.LogRecordExporter
@@ -54,6 +56,21 @@ internal class OTelApiDelegate(
             return
         }
         bootstrapper.openTelemetryModule.setAutoParentOrphanSpansToSession(enabled)
+    }
+
+    override fun setAutoParentOrphanSpansToView(enabled: Boolean) {
+        if (sdkCallChecker.started.get()) {
+            return
+        }
+        val provider: (() -> EmbraceSpan?)? = if (enabled) {
+            {
+                bootstrapper.instrumentationModule.instrumentationRegistry
+                    .findByType(ViewDataSource::class)?.getCurrentViewSpan()
+            }
+        } else {
+            null
+        }
+        bootstrapper.openTelemetryModule.setViewSpanProvider(provider)
     }
 
     override fun getOpenTelemetryKotlin(): OpenTelemetry {
