@@ -8,6 +8,7 @@ import io.embrace.android.embracesdk.internal.arch.datasource.DataSourceImpl
 import io.embrace.android.embracesdk.internal.arch.datasource.SpanToken
 import io.embrace.android.embracesdk.internal.arch.limits.UpToLimitStrategy
 import io.embrace.android.embracesdk.internal.arch.schema.SchemaType
+import io.embrace.android.embracesdk.spans.EmbraceSpan
 
 /**
  * Captures fragment views.
@@ -34,6 +35,12 @@ class ViewDataSource(
     }
 
     /**
+     * Returns the span for the currently active view, or null if no view is active.
+     */
+    fun getCurrentViewSpan(): EmbraceSpan? =
+        synchronized(viewSpans) { viewSpans.values.lastOrNull()?.asEmbraceSpan() }
+
+    /**
      * Called when a view is started. If a view with the same name is already running, it will be ended.
      */
     fun startView(name: String?): Boolean {
@@ -41,7 +48,7 @@ class ViewDataSource(
             synchronized(viewSpans) {
                 // Remove previous entry even if we don't replace it, like if we can't start a new view span because of limits
                 viewSpans.remove(name)?.stop()
-                startSpanCapture(SchemaType.View(checkNotNull(name)), clock.now()).apply {
+                startSpanCapture(SchemaType.View(checkNotNull(name)), clock.now(), name = checkNotNull(name)).apply {
                     viewSpans[name] = this
                 }
             }

@@ -1,6 +1,7 @@
 package io.embrace.android.embracesdk.internal.arch.datasource
 
 import io.embrace.android.embracesdk.internal.arch.schema.ErrorCodeAttribute
+import io.embrace.android.embracesdk.spans.EmbraceSpan
 
 /**
  * A token that represents a span.
@@ -47,4 +48,9 @@ interface SpanToken {
      * Add a system event to the span
      */
     fun addSystemEvent(name: String, eventTimeMs: Long, attributes: Map<String, String>)
+
+    /**
+     * Returns the underlying [EmbraceSpan], or null if not applicable.
+     */
+    fun asEmbraceSpan(): EmbraceSpan? = null
 }

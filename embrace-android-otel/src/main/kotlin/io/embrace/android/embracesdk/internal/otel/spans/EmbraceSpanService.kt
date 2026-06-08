@@ -24,13 +24,15 @@ class EmbraceSpanService(
     private val tracerSupplier: Provider<Tracer>,
     private val openTelemetrySupplier: Provider<OpenTelemetry>,
     private val sessionSpanProvider: (() -> EmbraceSpan?)? = null,
+    private val viewSpanProvider: (() -> EmbraceSpan?)? = null,
 ) : SpanService {
     private val uninitializedSdkSpansService: UninitializedSdkSpanService = UninitializedSdkSpanService()
 
     @Volatile
     private var currentDelegate: SpanService = uninitializedSdkSpansService
 
-    private fun resolveParent(explicit: EmbraceSpan?): EmbraceSpan? = explicit ?: sessionSpanProvider?.invoke()
+    private fun resolveParent(explicit: EmbraceSpan?): EmbraceSpan? =
+        explicit ?: viewSpanProvider?.invoke() ?: sessionSpanProvider?.invoke()
 
     override fun initializeService(sdkInitStartTimeMs: Long) {
         if (!initialized()) {

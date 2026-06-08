@@ -2,6 +2,7 @@ package io.embrace.android.embracesdk.internal.injection
 
 import io.embrace.android.embracesdk.internal.config.behavior.OtelBehavior
 import io.embrace.android.embracesdk.internal.config.behavior.SensitiveKeysBehavior
+import io.embrace.android.embracesdk.spans.EmbraceSpan
 import io.embrace.android.embracesdk.internal.otel.config.OtelSdkConfig
 import io.embrace.android.embracesdk.internal.otel.logs.EventService
 import io.embrace.android.embracesdk.internal.otel.logs.LogSink
@@ -72,4 +73,6 @@ interface OpenTelemetryModule {
     )
 
     fun setAutoParentOrphanSpansToSession(enable: Boolean)
+
+    fun setViewSpanProvider(provider: (() -> EmbraceSpan?)?)
 }
