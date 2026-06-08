@@ -3,6 +3,9 @@ package io.embrace.android.embracesdk.internal.instrumentation.view
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import io.embrace.android.embracesdk.internal.arch.InstrumentationArgs
 import io.embrace.android.embracesdk.internal.arch.datasource.DataSourceImpl
 import io.embrace.android.embracesdk.internal.arch.datasource.SpanToken
@@ -102,7 +105,18 @@ class ViewDataSource(
         onViewClose()
     }
 
-    override fun onActivityCreated(p0: Activity, p1: Bundle?) {
+    private val fragmentCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
+        override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+            changeView(f.javaClass.name)
+        }
+        override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
+            endView(f.javaClass.name)
+        }
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        (activity as? FragmentActivity)?.supportFragmentManager
+            ?.registerFragmentLifecycleCallbacks(fragmentCallbacks, true)
     }
 
     override fun onActivityDestroyed(p0: Activity) {
