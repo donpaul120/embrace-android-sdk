@@ -31,4 +31,10 @@ interface EventService : Initializable {
      * Sets a provider that supplies a snapshot of the current metadata that describes the state of the SDK
      */
     fun setMetadataProvider(provider: Provider<Map<String, String>>)
+
+    /**
+     * Sets a provider that supplies the active OTel Context to stamp onto log records.
+     * Used to populate top-level trace_id/span_id fields so Signoz can link logs to traces.
+     */
+    fun setContextProvider(provider: Provider<Context?>)
 }

@@ -24,6 +24,10 @@ import java.util.ServiceLoader
  */
 internal fun ModuleGraph.postInit() {
     openTelemetryModule.eventService.setMetadataProvider(eventMetadataSupplierProvider())
+    // Propagate the active session span's OTel context into every log record so Signoz can link logs to traces.
+    openTelemetryModule.eventService.setContextProvider {
+        openTelemetryModule.currentSessionPartSpan.current()?.asNewContext()
+    }
 
     openTelemetryModule.applyConfiguration(
         sensitiveKeysBehavior = configService.sensitiveKeysBehavior,
