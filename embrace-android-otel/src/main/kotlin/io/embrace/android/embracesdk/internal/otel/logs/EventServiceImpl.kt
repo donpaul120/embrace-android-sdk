@@ -18,6 +18,7 @@ class EventServiceImpl(
     private val sdkLoggerRef: AtomicReference<Logger> = AtomicReference(noopLogger)
     private val metadataSupplierProviderRef = AtomicReference<Provider<Map<String, String>>> { emptyMap() }
     private val contextProviderRef = AtomicReference<Provider<Context?>> { null }
+    private val contextFactoryRef = AtomicReference<((Map<String, Any>) -> Context?)>({ _ -> null })
 
     override fun initializeService(sdkInitStartTimeMs: Long) {
         sdkLoggerRef.set(sdkLoggerProvider())
@@ -47,8 +48,11 @@ class EventServiceImpl(
             getCurrentMetadata().forEach { (k, v) -> container.setStringAttribute(k, v) }
         }
 
-        // Caller-supplied context wins; fall back to the provider so log records carry the active span's trace_id/span_id when callers don't supply one.
-        val resolvedContext = context ?: contextProviderRef.get().invoke()
+        // Caller-supplied context wins; then try the attribute-aware factory (e.g. look up Flutter screen span
+        // by span_id attribute); finally fall back to the provider (session span).
+        val resolvedContext = context
+            ?: contextFactoryRef.get().invoke(container.attributes)
+            ?: contextProviderRef.get().invoke()
         logger.emit(
             body = body,
             eventName = eventName,
@@ -69,6 +73,10 @@ class EventServiceImpl(
 
     override fun setContextProvider(provider: Provider<Context?>) {
         contextProviderRef.set(provider)
+    }
+
+    override fun setContextFactory(factory: (Map<String, Any>) -> Context?) {
+        contextFactoryRef.set(factory)
     }
 
     private fun getCurrentMetadata(): Map<String, String> = metadataSupplierProviderRef.get().invoke().toMap()

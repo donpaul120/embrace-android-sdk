@@ -13,8 +13,10 @@ import io.embrace.android.embracesdk.internal.otel.impl.EmbTracerProvider
 import io.embrace.android.embracesdk.internal.otel.logs.EventService
 import io.embrace.android.embracesdk.internal.otel.spans.SpanService
 import io.embrace.android.embracesdk.internal.utils.EmbTrace
+import io.embrace.android.embracesdk.internal.otel.getDefaultContext
 import io.opentelemetry.kotlin.Clock
 import io.opentelemetry.kotlin.OpenTelemetry
+import io.opentelemetry.kotlin.context.Context
 import io.opentelemetry.kotlin.logging.Logger
 import io.opentelemetry.kotlin.logging.export.compositeLogRecordProcessor
 import io.opentelemetry.kotlin.tracing.Tracer
@@ -96,4 +98,11 @@ class OtelSdkWrapper(
             loggerProviderSupplier = { EmbLoggerProvider(kotlinApi, eventService) }
         )
     }
+
+    /**
+     * Returns the OTel [Context] for the currently active Embrace span on this thread, or null
+     * if no span is active. In compat (Java OTel) mode this reads from the Java thread-local
+     * context; in Kotlin-SDK mode it reads from the root context.
+     */
+    fun currentActiveContext(): Context? = kotlinApi.getDefaultContext(useKotlinSdk)
 }
