@@ -82,4 +82,12 @@ interface UserService {
     fun clearUsername()
 
     fun addUserInfoListener(listener: () -> Unit)
+
+    /**
+     * Re-stamps the current user identity onto a freshly started session span. Session span
+     * attributes don't carry over across session parts/new sessions, so this must be called
+     * after each new session span is created — mirrors
+     * [io.embrace.android.embracesdk.internal.capture.session.UserSessionPropertiesService.prepareForNewSession].
+     */
+    fun prepareForNewSession()
 }

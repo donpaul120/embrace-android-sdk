@@ -3,8 +3,10 @@ package io.embrace.android.embracesdk.internal.capture.user
 import io.embrace.android.embracesdk.fakes.FakeClock
 import io.embrace.android.embracesdk.fakes.FakeInternalLogger
 import io.embrace.android.embracesdk.fakes.FakeKeyValueStore
+import io.embrace.android.embracesdk.fakes.FakeTelemetryDestination
 import io.embrace.android.embracesdk.internal.logging.InternalLogger
 import io.embrace.android.embracesdk.internal.payload.UserInfo
+import io.embrace.android.embracesdk.semconv.EmbSessionAttributes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -32,12 +34,14 @@ internal class EmbraceUserServiceTest {
     private lateinit var store: FakeKeyValueStore
     private lateinit var logger: InternalLogger
     private lateinit var clock: FakeClock
+    private lateinit var destination: FakeTelemetryDestination
 
     @Before
     fun setUp() {
         logger = FakeInternalLogger()
         clock = FakeClock()
         store = FakeKeyValueStore()
+        destination = FakeTelemetryDestination()
 
         setUserInfo(
             id = "f0a923498c",
@@ -48,7 +52,7 @@ internal class EmbraceUserServiceTest {
         )
 
         // load user info
-        service = EmbraceUserService(store, clock, logger)
+        service = EmbraceUserService(store, clock, logger, destination)
     }
 
     @Test
@@ -100,6 +104,51 @@ internal class EmbraceUserServiceTest {
             service.clearUserEmail()
             assertNull(getUserInfo().email)
         }
+    }
+
+    @Test
+    fun testUserIdentifierStampedOnSessionSpan() {
+        with(service) {
+            assertFalse(destination.attributes.containsKey(EmbSessionAttributes.EMB_USER_ID))
+            setUserIdentifier("abc")
+            assertEquals("abc", destination.attributes[EmbSessionAttributes.EMB_USER_ID])
+            clearUserIdentifier()
+            assertFalse(destination.attributes.containsKey(EmbSessionAttributes.EMB_USER_ID))
+        }
+    }
+
+    @Test
+    fun testSettingSameUserIdentifierAgainStillStampsSessionSpan() {
+        // setUp() already loaded "f0a923498c" from disk (e.g. persisted from a prior
+        // session/run). Re-identifying with that same value must still stamp the CURRENT
+        // session span's attribute rather than short-circuiting on the "did this value
+        // actually change" check that guards the disk write/listener notification below it.
+        destination.attributes.clear()
+        service.setUserIdentifier("f0a923498c")
+        assertEquals("f0a923498c", destination.attributes[EmbSessionAttributes.EMB_USER_ID])
+    }
+
+    @Test
+    fun testUsernameAndEmailStampedOnSessionSpan() {
+        with(service) {
+            setUsername("Joe")
+            setUserEmail("foo@test.com")
+            assertEquals("Joe", destination.attributes[EmbSessionAttributes.EMB_USERNAME])
+            assertEquals("foo@test.com", destination.attributes[EmbSessionAttributes.EMB_USER_EMAIL])
+            clearUsername()
+            clearUserEmail()
+            assertFalse(destination.attributes.containsKey(EmbSessionAttributes.EMB_USERNAME))
+            assertFalse(destination.attributes.containsKey(EmbSessionAttributes.EMB_USER_EMAIL))
+        }
+    }
+
+    @Test
+    fun testPrepareForNewSessionRestampsCurrentIdentity() {
+        destination.attributes.clear()
+        service.prepareForNewSession()
+        assertEquals("f0a923498c", destination.attributes[EmbSessionAttributes.EMB_USER_ID])
+        assertEquals("Mr Test", destination.attributes[EmbSessionAttributes.EMB_USERNAME])
+        assertEquals("test@example.com", destination.attributes[EmbSessionAttributes.EMB_USER_EMAIL])
     }
 
     @Test

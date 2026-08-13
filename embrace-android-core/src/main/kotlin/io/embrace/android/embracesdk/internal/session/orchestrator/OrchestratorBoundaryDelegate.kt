@@ -33,5 +33,6 @@ internal class OrchestratorBoundaryDelegate(
      */
     fun prepareForNewSession() {
         userSessionPropertiesService.prepareForNewSession()
+        userService.prepareForNewSession()
     }
 }

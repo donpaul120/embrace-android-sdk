@@ -43,6 +43,7 @@ internal class OrchestratorBoundaryDelegateTest {
         delegate.prepareForNewSession()
         assertEquals(0, userSessionPropertiesService.cleanupAfterSessionEndCallCount)
         assertEquals(1, userSessionPropertiesService.prepareNewSessionCallCount)
+        assertEquals(1, userService.prepareForNewSessionCallCount)
         assertEquals(0, userService.clearedCount)
     }
 }

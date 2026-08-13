@@ -1,5 +1,6 @@
 package io.embrace.android.embracesdk.internal.capture.user
 
+import io.embrace.android.embracesdk.internal.arch.datasource.TelemetryDestination
 import io.embrace.android.embracesdk.internal.clock.Clock
 import io.embrace.android.embracesdk.internal.logging.InternalErrorType
 import io.embrace.android.embracesdk.internal.logging.InternalLogger
@@ -7,6 +8,7 @@ import io.embrace.android.embracesdk.internal.payload.UserInfo
 import io.embrace.android.embracesdk.internal.store.KeyValueStore
 import io.embrace.android.embracesdk.internal.utils.EmbTrace
 import io.embrace.android.embracesdk.internal.utils.Provider
+import io.embrace.android.embracesdk.semconv.EmbSessionAttributes
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
@@ -15,6 +17,7 @@ internal class EmbraceUserService(
     private val impl: KeyValueStore,
     private val clock: Clock,
     private val logger: InternalLogger,
+    private val destination: TelemetryDestination,
 ) : UserService {
 
     /**
@@ -71,6 +74,13 @@ internal class EmbraceUserService(
     override fun getUserInfo(): UserInfo = userInfo().copy()
 
     override fun setUserIdentifier(userId: String?) {
+        // Stamped unconditionally, ahead of the "did this actually change" guard below: that
+        // guard exists to skip redundant disk writes/listener notifications, but the session
+        // span attribute must be (re)applied on every call regardless of whether the cached
+        // value already matches — e.g. a persisted user id from a prior run/session that
+        // matches what prepareForNewSession() would otherwise have to catch up on its own,
+        // or a case where prepareForNewSession() ran before this value was ever known.
+        updateSessionAttribute(EmbSessionAttributes.EMB_USER_ID, userId)
         val currentUserId = userInfo().userId
         if (currentUserId != null && currentUserId == userId) {
             return
@@ -84,6 +94,7 @@ internal class EmbraceUserService(
     }
 
     override fun setUsername(username: String?) {
+        updateSessionAttribute(EmbSessionAttributes.EMB_USERNAME, username)
         val currentUserName = userInfo().username
         if (currentUserName != null && currentUserName == username) {
             return
@@ -97,6 +108,7 @@ internal class EmbraceUserService(
     }
 
     override fun setUserEmail(email: String?) {
+        updateSessionAttribute(EmbSessionAttributes.EMB_USER_EMAIL, email)
         val currentEmail = userInfo().email
         if (currentEmail != null && currentEmail == email) {
             return
@@ -107,6 +119,27 @@ internal class EmbraceUserService(
 
     override fun clearUserEmail() {
         setUserEmail(null)
+    }
+
+    /**
+     * Mirrors [io.embrace.android.embracesdk.internal.capture.session.EmbraceUserSessionProperties.add]
+     * — user identity, like session properties, is only meaningful as a span attribute if it's
+     * pushed to the session span the moment it changes, not just cached until the next payload
+     * build.
+     */
+    private fun updateSessionAttribute(key: String, value: String?) {
+        if (value != null) {
+            destination.addSessionPartAttribute(key, value)
+        } else {
+            destination.removeSessionPartAttribute(key)
+        }
+    }
+
+    override fun prepareForNewSession() {
+        val info = userInfo()
+        updateSessionAttribute(EmbSessionAttributes.EMB_USER_ID, info.userId)
+        updateSessionAttribute(EmbSessionAttributes.EMB_USERNAME, info.username)
+        updateSessionAttribute(EmbSessionAttributes.EMB_USER_EMAIL, info.email)
     }
 
     override fun addUserPersona(persona: String?) {
