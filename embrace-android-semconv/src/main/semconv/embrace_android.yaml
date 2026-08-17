@@ -442,6 +442,21 @@ groups:
         brief: "Unique ID assigned to each app instance."
         stability: development
         examples: ["1", "42"]
+      - id: emb.user.identifier
+        type: string
+        brief: "The unique identifier of the user set via setUserIdentifier(), stamped onto the session span so it survives export to third-party OTel backends."
+        stability: development
+        examples: ["f0a923498c"]
+      - id: emb.user.username
+        type: string
+        brief: "The username of the user set via setUsername(), stamped onto the session span so it survives export to third-party OTel backends."
+        stability: development
+        examples: ["Mr Test"]
+      - id: emb.user.email
+        type: string
+        brief: "The email address of the user set via setUserEmail(), stamped onto the session span so it survives export to third-party OTel backends."
+        stability: development
+        examples: ["test@example.com"]
       - id: emb.user_session_id
         type: string
         brief: "UUID identifying the session."

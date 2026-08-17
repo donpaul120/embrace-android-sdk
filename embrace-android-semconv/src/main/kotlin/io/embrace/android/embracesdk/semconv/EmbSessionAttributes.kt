@@ -152,6 +152,24 @@ object EmbSessionAttributes {
     }
 
     /**
+     * The unique identifier of the user set via setUserIdentifier(), stamped onto the session span so it survives export to third-party OTel backends.
+     */
+    @ExperimentalSemconv
+    const val EMB_USER_ID: String = "emb.user.identifier"
+
+    /**
+     * The username of the user set via setUsername(), stamped onto the session span so it survives export to third-party OTel backends.
+     */
+    @ExperimentalSemconv
+    const val EMB_USERNAME: String = "emb.user.username"
+
+    /**
+     * The email address of the user set via setUserEmail(), stamped onto the session span so it survives export to third-party OTel backends.
+     */
+    @ExperimentalSemconv
+    const val EMB_USER_EMAIL: String = "emb.user.email"
+
+    /**
      * UUID identifying the session.
      */
     @ExperimentalSemconv

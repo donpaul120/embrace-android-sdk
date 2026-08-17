@@ -50,7 +50,8 @@ class EssentialServiceModuleImpl(
             EmbraceUserService(
                 coreModule.store,
                 initModule.clock,
-                initModule.logger
+                initModule.logger,
+                telemetryDestination
             )
         }
     }
