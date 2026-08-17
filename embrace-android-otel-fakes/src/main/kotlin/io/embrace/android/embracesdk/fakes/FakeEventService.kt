@@ -42,6 +42,12 @@ class FakeEventService : EventService {
     override fun setMetadataProvider(provider: Provider<Map<String, String>>) {
     }
 
+    override fun setContextProvider(provider: Provider<Context?>) {
+    }
+
+    override fun setContextFactory(factory: (Map<String, Any>) -> Context?) {
+    }
+
     override fun initializeService(sdkInitStartTimeMs: Long) {
         initTime = sdkInitStartTimeMs
     }

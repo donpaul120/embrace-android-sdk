@@ -24,6 +24,23 @@ import java.util.ServiceLoader
  */
 internal fun ModuleGraph.postInit() {
     openTelemetryModule.eventService.setMetadataProvider(eventMetadataSupplierProvider())
+    // Attribute-aware context factory: if the log carries a span_id attribute (e.g. set by
+    // EmbraceRemoteLogger via TelemetryContext.currentSpan?.id), look up that span in the
+    // repository and use its context so Signoz links the log to the active Flutter screen span.
+    openTelemetryModule.eventService.setContextFactory { attrs ->
+        val spanId = attrs["span_id"]?.toString()
+        if (spanId != null) {
+            openTelemetryModule.spanRepository.getSpan(spanId)?.asNewContext()
+        } else {
+            null
+        }
+    }
+    // Fallback: stamp every log with the session span so all logs carry at least the session
+    // trace_id/span_id when no specific span_id attribute is present.
+    openTelemetryModule.eventService.setContextProvider {
+        openTelemetryModule.otelSdkWrapper.currentActiveContext()
+            ?: openTelemetryModule.currentSessionPartSpan.current()?.asNewContext()
+    }
 
     openTelemetryModule.applyConfiguration(
         sensitiveKeysBehavior = configService.sensitiveKeysBehavior,

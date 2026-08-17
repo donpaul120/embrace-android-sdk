@@ -17,6 +17,8 @@ class EventServiceImpl(
     private val noopLogger = NoopOpenTelemetry.loggerProvider.getLogger("noop")
     private val sdkLoggerRef: AtomicReference<Logger> = AtomicReference(noopLogger)
     private val metadataSupplierProviderRef = AtomicReference<Provider<Map<String, String>>> { emptyMap() }
+    private val contextProviderRef = AtomicReference<Provider<Context?>> { null }
+    private val contextFactoryRef = AtomicReference<((Map<String, Any>) -> Context?)>({ _ -> null })
 
     override fun initializeService(sdkInitStartTimeMs: Long) {
         sdkLoggerRef.set(sdkLoggerProvider())
@@ -46,12 +48,17 @@ class EventServiceImpl(
             getCurrentMetadata().forEach { (k, v) -> container.setStringAttribute(k, v) }
         }
 
+        // Caller-supplied context wins; then try the attribute-aware factory (e.g. look up Flutter screen span
+        // by span_id attribute); finally fall back to the provider (session span).
+        val resolvedContext = context
+            ?: contextFactoryRef.get().invoke(container.attributes)
+            ?: contextProviderRef.get().invoke()
         logger.emit(
             body = body,
             eventName = eventName,
             timestamp = timestamp,
             observedTimestamp = observedTimestamp,
-            context = context,
+            context = resolvedContext,
             severityNumber = severityNumber,
             severityText = severityText,
             attributes = {
@@ -62,6 +69,14 @@ class EventServiceImpl(
 
     override fun setMetadataProvider(provider: Provider<Map<String, String>>) {
         metadataSupplierProviderRef.set(provider)
+    }
+
+    override fun setContextProvider(provider: Provider<Context?>) {
+        contextProviderRef.set(provider)
+    }
+
+    override fun setContextFactory(factory: (Map<String, Any>) -> Context?) {
+        contextFactoryRef.set(factory)
     }
 
     private fun getCurrentMetadata(): Map<String, String> = metadataSupplierProviderRef.get().invoke().toMap()

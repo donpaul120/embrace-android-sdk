@@ -31,4 +31,17 @@ interface EventService : Initializable {
      * Sets a provider that supplies a snapshot of the current metadata that describes the state of the SDK
      */
     fun setMetadataProvider(provider: Provider<Map<String, String>>)
+
+    /**
+     * Sets a provider that supplies the active OTel Context to stamp onto log records.
+     * Used to populate top-level trace_id/span_id fields so Signoz can link logs to traces.
+     */
+    fun setContextProvider(provider: Provider<Context?>)
+
+    /**
+     * Sets a factory that resolves the OTel Context for a log record based on its attributes.
+     * Takes precedence over [setContextProvider] when it returns a non-null value.
+     * Use this to look up a specific span by ID (e.g. the active Flutter screen span).
+     */
+    fun setContextFactory(factory: (Map<String, Any>) -> Context?)
 }
